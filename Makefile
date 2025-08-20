@@ -11,10 +11,12 @@ setup:
 	$(ACTIVATE) && pip install -r requirements.txt
 
 run:
-	$(ACTIVATE) && $(PYTHON) church_scheduler.py --master Master.xlsx --year $(YEAR) --month $(MONTH) --output Jadwal-Bulanan-$(YEAR)-$(MONTH).xlsx
+	mkdir -p output
+	$(ACTIVATE) && $(PYTHON) church_scheduler.py --master Master.xlsx --year $(YEAR) --month $(MONTH) --output output/Jadwal-Bulanan-$(YEAR)-$(MONTH).xlsx
 
 run4:
-	$(ACTIVATE) && $(PYTHON) church_scheduler.py --master Master.xlsx --year $(YEAR) --month $(MONTH) --pjemaat-count 4 --output Jadwal-Bulanan-$(YEAR)-$(MONTH)-4jemaat.xlsx
+	mkdir -p output
+	$(ACTIVATE) && $(PYTHON) church_scheduler.py --master Master.xlsx --year $(YEAR) --month $(MONTH) --pjemaat-count 4 --output output/Jadwal-Bulanan-$(YEAR)-$(MONTH)-4jemaat.xlsx
 
 clean:
-	rm -rf $(VENV) *.xlsx
+	rm -rf $(VENV) output/*.xlsx

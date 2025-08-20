@@ -9,7 +9,7 @@ REM   run.bat 8 2025 4   (August 2025, 4 P. Jemaat)
 
 setlocal ENABLEDELAYEDEXPANSION
 
-REM Determine defaults using PowerShell for reliability across locales
+REM Determine defaults using PowerShell
 for /f "usebackq delims=" %%M in (`powershell -NoProfile -Command "(Get-Date).ToString('MM')"`) do set CURMONTH=%%M
 for /f "usebackq delims=" %%Y in (`powershell -NoProfile -Command "(Get-Date).ToString('yyyy')"`) do set CURYEAR=%%Y
 
@@ -38,8 +38,11 @@ if not exist "venv\Scripts\python.exe" (
   call venv\Scripts\activate.bat
 )
 
+REM Ensure output folder exists
+if not exist output\ mkdir output
+
 REM Build output filename
-set OUTFILE=Jadwal-Bulanan-%YEAR%-%MONTH%
+set OUTFILE=output\Jadwal-Bulanan-%YEAR%-%MONTH%
 
 if "%PJEMAAT%"=="4" (
   set OUTFILE=%OUTFILE%-4jemaat.xlsx

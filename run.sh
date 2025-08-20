@@ -19,13 +19,14 @@ else
   source $VENV/bin/activate
 fi
 
-OUTFILE="Jadwal-Bulanan-${YEAR}-${MONTH}"
+mkdir -p output
+OUTFILE="output/Jadwal-Bulanan-${YEAR}-${MONTH}"
 if [ "$PJEMAAT" -eq 4 ]; then
   OUTFILE="${OUTFILE}-4jemaat.xlsx"
-  $PYTHON church_scheduler.py --master Master.xlsx --year $YEAR --month $MONTH --pjemaat-count 4 --output $OUTFILE
+  $PYTHON church_scheduler.py --master Master.xlsx --year $YEAR --month $MONTH --pjemaat-count 4 --output "$OUTFILE"
 else
   OUTFILE="${OUTFILE}.xlsx"
-  $PYTHON church_scheduler.py --master Master.xlsx --year $YEAR --month $MONTH --pjemaat-count $PJEMAAT --output $OUTFILE
+  $PYTHON church_scheduler.py --master Master.xlsx --year $YEAR --month $MONTH --pjemaat-count $PJEMAAT --output "$OUTFILE"
 fi
 
 echo "Generated $OUTFILE"

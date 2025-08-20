@@ -1,12 +1,24 @@
 
 import argparse
 import os
+import sys
 from datetime import date, timedelta
 from collections import deque, defaultdict
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+
+
+def info(msg: str):
+    print(f"[INFO] {msg}", file=sys.stdout)
+
+def success(msg: str):
+    print(f"[OK] {msg}", file=sys.stdout)
+
+def error(msg: str):
+    print(f"[ERROR] {msg}", file=sys.stderr)
+
 
 # -------------------------
 # Helpers
@@ -113,7 +125,6 @@ def schedule_month(people, year, month, prefer_no_repeat_non_elder=True, pjemaat
     the no-repeat constraint as a *last resort* to fill slots.
     """
     # Business rules per prompt
-    pjemaat_count = min(max(args.pjemaat_count,1),4) if 'args' in locals() else 3
 
     NEEDS = {
         'DP/PA':      {'count':1, 'who':'ELDER'},
@@ -289,15 +300,39 @@ def main():
     ap.add_argument("--master", required=True, help="Path to Master.xlsx")
     ap.add_argument("--year", type=int, required=True)
     ap.add_argument("--month", type=int, required=True)
-    ap.add_argument("--output", default="Jadwal-Bulanan.xlsx")
+    ap.add_argument("--output", default="output/Jadwal-Bulanan.xlsx")
     ap.add_argument("--repeat-non-elder", action="store_true",
                     help="Allow non-elders to repeat on consecutive weeks when needed (default: tries to avoid repeats if pool is sufficient)")
+    ap.add_argument("--verbose", action="store_true",
+                    help="Print extra info about assignments and rotations")
     args = ap.parse_args()
 
-    people, tasks = read_master(args.master)
-    sundays, sched = schedule_month(people, args.year, args.month, prefer_no_repeat_non_elder=not args.repeat_non_elder, pjemaat_count=min(max(args.pjemaat_count,1),4))
-    write_excel(args.output, sundays, sched)
-    print(f"Generated {args.output} for {len(sundays)} Sundays.")
+    try:
+        if not os.path.exists(args.master):
+            error(f"Master file not found: {args.master}")
+            return
+
+        people, tasks = read_master(args.master)
+        if people.empty:
+            error("Master.xlsx contains no usable data.")
+            return
+
+        sundays, sched = schedule_month(
+            people, args.year, args.month,
+            prefer_no_repeat_non_elder=not args.repeat_non_elder,
+            pjemaat_count=min(max(args.pjemaat_count,1),4)
+        )
+
+        write_excel(args.output, sundays, sched)
+        success(f"Generated {args.output} for {len(sundays)} Sundays.")
+
+        if args.verbose:
+            info(f"Total people: {len(people)} | Tasks detected: {tasks}")
+            for d in sundays:
+                info(f"{d}: " + ", ".join(f"{t}={len(sched[d][t])}" for t in sched[d]))
+
+    except Exception as e:
+        error(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
     main()

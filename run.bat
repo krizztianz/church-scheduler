@@ -1,61 +1,34 @@
 @echo off
-REM Simple runner for church_scheduler.py on Windows
-REM Usage:
-REM   run.bat [MONTH] [YEAR] [PJEMAAT_COUNT]
-REM Examples:
-REM   run.bat            (uses current month/year, 3 P. Jemaat)
-REM   run.bat 8 2025     (August 2025, 3 P. Jemaat)
-REM   run.bat 8 2025 4   (August 2025, 4 P. Jemaat)
+REM Usage: run.bat MM YYYY PJEMAAT
+setlocal
+set MM=%~1
+set YYYY=%~2
+set PJ=%~3
 
-setlocal ENABLEDELAYEDEXPANSION
+if "%MM%"=="" goto :usage
+if "%YYYY%"=="" goto :usage
+if "%PJ%"=="" set PJ=3
 
-REM Determine defaults using PowerShell
-for /f "usebackq delims=" %%M in (`powershell -NoProfile -Command "(Get-Date).ToString('MM')"`) do set CURMONTH=%%M
-for /f "usebackq delims=" %%Y in (`powershell -NoProfile -Command "(Get-Date).ToString('yyyy')"`) do set CURYEAR=%%Y
+REM ROOT is ...\pythonScripts\, so go up one level
+set ROOT=%~dp0
+set ROOT=%ROOT:~0,-14%
 
-REM Read args or fallback to defaults
-set MONTH=%1
-if "%MONTH%"=="" set MONTH=%CURMONTH%
+set OUTDIR=%ROOT%\output
+if not exist "%OUTDIR%" mkdir "%OUTDIR%"
 
-set YEAR=%2
-if "%YEAR%"=="" set YEAR=%CURYEAR%
+set PY=%PYTHON%
+if "%PY%"=="" set PY=python
 
-set PJEMAAT=%3
-if "%PJEMAAT%"=="" set PJEMAAT=3
-
-REM Ensure venv exists and dependencies installed
-if not exist "venv\Scripts\python.exe" (
-  echo [INFO] Creating virtual environment...
-  py -3 -m venv venv
-  if errorlevel 1 (
-    echo [ERROR] Failed to create venv. Ensure Python 3 is installed and 'py' launcher is available.
-    goto :eof
-  )
-  echo [INFO] Installing requirements...
-  call venv\Scripts\activate.bat
-  pip install -r requirements.txt
+REM OUTPUT_PATH may be provided by Electron. Use default if missing.
+if "%OUTPUT_PATH%"=="" (
+  set OUTFILE=%OUTDIR%\Jadwal-Bulanan.xlsx
 ) else (
-  call venv\Scripts\activate.bat
+  set OUTFILE=%OUTPUT_PATH%
 )
 
-REM Ensure output folder exists
-if not exist output\ mkdir output
+"%PY%" "%ROOT%\church_scheduler.py" --master "%ROOT%\Master.xlsx" --year %YYYY% --month %MM% --pjemaat-count %PJ% --output "%OUTFILE%"
+exit /b %errorlevel%
 
-REM Build output filename
-set OUTFILE=output\Jadwal-Bulanan-%YEAR%-%MONTH%
-
-if "%PJEMAAT%"=="4" (
-  set OUTFILE=%OUTFILE%-4jemaat.xlsx
-  venv\Scripts\python.exe church_scheduler.py --master Master.xlsx --year %YEAR% --month %MONTH% --pjemaat-count %PJEMAAT% --output "%OUTFILE%"
-) else (
-  set OUTFILE=%OUTFILE%.xlsx
-  venv\Scripts\python.exe church_scheduler.py --master Master.xlsx --year %YEAR% --month %MONTH% --pjemaat-count %PJEMAAT% --output "%OUTFILE%"
-)
-
-if errorlevel 1 (
-  echo [ERROR] Generation failed.
-) else (
-  echo [OK] Generated "%OUTFILE%"
-)
-
-endlocal
+:usage
+echo Usage: run.bat MM YYYY PJEMAAT
+exit /b 2

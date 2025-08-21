@@ -1,32 +1,28 @@
-#!/bin/bash
-# Simple runner for church_scheduler.py
-# Usage:
-#   ./run.sh [month] [year] [pjemaat_count]
+#!/usr/bin/env bash
+# Usage: run.sh MM YYYY PJEMAAT
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="${SCRIPT_DIR%/pythonScripts}"
+PY="${PYTHON:-python3}"
 
-MONTH=${1:-$(date +%m)}
-YEAR=${2:-$(date +%Y)}
-PJEMAAT=${3:-3}
-
-VENV=venv
-PYTHON=$VENV/bin/python
-
-if [ ! -d "$VENV" ]; then
-  echo "Virtualenv not found, creating..."
-  python3 -m venv $VENV
-  source $VENV/bin/activate
-  pip install -r requirements.txt
-else
-  source $VENV/bin/activate
+MM="${1:-}"; YYYY="${2:-}"; PJ="${3:-3}"
+if [[ -z "$MM" || -z "$YYYY" ]]; then
+  echo "Usage: run.sh MM YYYY PJEMAAT" >&2
+  exit 2
 fi
 
-mkdir -p output
-OUTFILE="output/Jadwal-Bulanan-${YEAR}-${MONTH}"
-if [ "$PJEMAAT" -eq 4 ]; then
-  OUTFILE="${OUTFILE}-4jemaat.xlsx"
-  $PYTHON church_scheduler.py --master Master.xlsx --year $YEAR --month $MONTH --pjemaat-count 4 --output "$OUTFILE"
+OUT_DIR="$ROOT_DIR/output"
+mkdir -p "$OUT_DIR"
+
+# OUTPUT_PATH can be injected from Electron. Fallback to default name if missing.
+if [[ -z "${OUTPUT_PATH:-}" ]]; then
+  OUT_FILE="$OUT_DIR/Jadwal-Bulanan.xlsx"
 else
-  OUTFILE="${OUTFILE}.xlsx"
-  $PYTHON church_scheduler.py --master Master.xlsx --year $YEAR --month $MONTH --pjemaat-count $PJEMAAT --output "$OUTFILE"
+  OUT_FILE="$OUTPUT_PATH"
 fi
 
-echo "Generated $OUTFILE"
+"$PY" "$ROOT_DIR/church_scheduler.py" \
+  --master "$ROOT_DIR/Master.xlsx" \
+  --year "$YYYY" --month "$((10#$MM))" \
+  --pjemaat-count "$PJ" \
+  --output "$OUT_FILE"
